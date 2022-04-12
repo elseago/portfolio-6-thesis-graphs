@@ -1,0 +1,166 @@
+---
+title: "portfolio-6-thesis-graphs"
+author: "Elayna Seago"
+date: "4/12/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+In this portfolio I am reading in different data sets and making different kinds of graphs that I used in my thesis. The main thing that makes these graphs different from ones we have done for class is that I had a much more specific vision of how they needed to be, so I made a lot more small detail changes than I have before.
+
+```{r libraries , echo=FALSE}
+
+library(readxl)
+library(tidyverse)
+
+```
+
+
+Graph 1
+```{r read-files}
+
+RegCoGraph <- read_excel("RegCo.xlsx")
+```
+
+```{r define-variables}
+RegCoGraph$PID<-as.factor(RegCoGraph$PID)
+
+RegCoGraph$Age <- factor(RegCoGraph$Age,
+                               levels = c(1,2),
+                               labels = c("Old", "Young")) 
+
+#converts 1's and 2's in the data file to correspond to factor labels of the block type variable of study method.
+
+RegCoGraph$Shift_type <-factor(RegCoGraph$Shift_type,
+                                  levels = c(1,2),
+                                  labels = c("Hold Cue", "Shift Cue")) 
+
+#converts 1's and 2's in the data file to correspond to factor labels of the cue type variable of time.
+
+RegCoGraph$beta_coeff <- as.numeric(RegCoGraph$beta_coeff)
+
+#RegCo$Block_num <- factor(RegCo$Block_num,
+                         # levels = 1,
+                          #labels = "first hold")
+
+RegCoGraph$SBlock_num <-factor(RegCoGraph$Block_num,
+                                  levels = c(1,2,3,4),
+                                  labels = c("First Mostly Hold Block", "First Mostly Shift Block" , "Second Mostly Hold Block" , "Second Mostly Shift Block"))
+```
+
+
+#finally started to use echo false
+```{r graph-1, echo=FALSE}
+facet.labs <- as_labeller(c('1' = "First Mostly Hold Block" , '2' = "First Mostly Shift Block" , '3' = "Second Mostly Hold Block" , '4' = "Second Mostly Shift Block"))
+
+ggplot(RegCoGraph, mapping = aes(x = Shift_type , y = beta_coeff , fill = Shift_type)) +
+  geom_dotplot(binaxis = "y" , stackdir = "center")+
+  facet_wrap(~ Block_num , labeller = facet.labs)+
+  labs(title = "Regression Coefficients for Younger and Older \nAdults During an Attention Shifting Paradigm" , x = "Cue Type" , y = "Regression Coefficient" , fill = "Cue Type")
+```
+
+
+Graph 2
+#used means and standard error to make a dataset just for graphing because this was the easiest was for me to add error bars
+```{r graph-2 , echo=FALSE}
+graphable <- data.frame(
+  cue = c("Hold Cue" , "Shift Cue" , "Hold Cue" , "Shift Cue") ,
+  block = c("MH","MH","MS","MS"),
+  response = c(87,80,76,78),
+  se = c(3,4,5,6)
+)
+
+facet.labs <- as_labeller(c('MH' = "Mostly Hold Block" , 'MS' = "Mostly Shift Block"))
+
+ggplot(graphable, mapping = aes(x = cue, y = response , fill = cue)) +
+  geom_bar(stat = "summary")+
+  facet_grid(.~block , labeller = facet.labs)+
+  labs(title = "Older Adults Accuracy on an \nAttention Shifting Paradigm" , x = "Cue Type" , y = "Accuracy (%)")+
+  scale_x_discrete(labels = c("Hold_Cue" = "Hold Cue" , "Shift_Cue" = "Shift Cue"))+
+  geom_errorbar(aes(x = cue , ymin = response-se , ymax = response + se), colour = "black", width = .4)+
+  scale_fill_manual(values = c("#999999" , "#E7B800" , "#999999" , "#E7B800"))+
+  theme(plot.title = element_text(size = 16))+
+  theme(plot.title = element_text(hjust = 0.5))+
+  theme(text = element_text(size = 13))+
+  ylim(0,100)
+```
+
+
+
+```{r}
+Young <- read_excel("young_mean_data.xlsx")
+```
+
+
+```{r}
+Young$Block_type <- factor(Young$Block_type,
+                               levels = c(1,2),
+                               labels = c("Mostly_Hold_Block", "Mostly_Shift_Block")) 
+
+#converts 1's and 2's in the data file to correspond to factor labels of the block type variable of study method.
+
+Young$Shift_type <-factor(Young$Shift_type,
+                                  levels = c(1,2),
+                                  labels = c("Hold_Cue", "Shift_Cue")) 
+
+#converts 1's and 2's in the data file to correspond to factor labels of the cue type variable of time.
+```
+
+```{r}
+Young %>% 
+  group_by(Block_type , Shift_type) %>% 
+  summarise(mean = mean(RT) ,
+            sd = sd(RT),
+            se = sd / sqrt(20))
+```
+
+
+Graph 3- I set the axis limits so that axes would match with a graph I made for older adults
+```{r}
+graphable2 <- data.frame(
+  Cue = c("Hold Cue" , "Shift Cue" , "Hold Cue" , "Shift Cue") ,
+  block = c("MH","MH","MS","MS"),
+  response = c(980,1100,1080,1040),
+  se = c(40,40,60,50)
+)
+
+#myColors <- c("#999999" , "#E7B800")
+#names(myColors) <-levels(graphable$cue)
+#custom_colors <- scale_colour_manual(name = "Cue Type" , values = "myColors")
+
+facet.labs <- as_labeller(c('MH' = "Mostly Hold Block" , 'MS' = "Mostly Shift Block"))
+
+ggplot(graphable2, mapping = aes(x = Cue, y = response , fill = Cue)) +
+  geom_bar(stat = "summary")+
+  facet_grid(.~block , labeller = facet.labs)+
+  labs(title = "Response Times for Younger Adults on an \nAttention Shifting Paradigm" , x = "Cue Type" , y = "Response Time (ms)")+
+  scale_x_discrete(labels = c("Hold_Cue" = "Hold Cue" , "Shift_Cue" = "Shift Cue"))+
+  geom_errorbar(aes(x = Cue , ymin = response-se , ymax = response + se), colour = "black", width = .4)+
+  scale_fill_manual(values = c("#999999" , "#E7B800" , "#999999" , "#E7B800"))+
+   theme(plot.title = element_text(size = 16))+
+  theme(plot.title = element_text(hjust = 0.5))+
+  theme(text = element_text(size = 13))+
+  ylim(0,1500)
+```
+
+
+```{r}
+Old <- read_excel("AllOldDSC.xlsx")
+```
+
+Here, I had the rt in seconds but wanted to graph it in milliseconds. I learned you can just convert it in the graph instructions which is cool.
+```{r}
+Old %>% 
+ggplot(aes(x = RT*1000 , y = DSC))+
+  geom_point()+
+  facet_wrap(~Block_type + Shift_type)+
+  stat_smooth(method = "lm")+
+  labs(x = "Response Time (ms)" , y = "Digist Symbol Substitution Score")
+
+```
+
